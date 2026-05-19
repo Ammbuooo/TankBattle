@@ -4,7 +4,7 @@ cmake-build-*/
 
 # IDE files
 .vs/
-.vscode/
+.cph/
 .idea/
 *.swp
 *.swo
