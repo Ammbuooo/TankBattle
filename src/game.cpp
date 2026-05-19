@@ -15,10 +15,24 @@ bool Game::Running() const {
     return state == GameState::PLAYING || state == GameState::PAUSED;
 }
 
-int Game::Score() const { return score; }
-int Game::Level() const { return level; }
-int Game::Lives() const { return lives; }
+int Game::GetScore() const { return score; }
+int Game::GetLevel() const { return level; }
+int Game::GetLives() const { return lives; }
+int Game::GetEnemiesKilled() const { return enemiesKilled; }
 GameState Game::GetState() const { return state; }
+const Map& Game::GetMap() const { return map; }
+const Tank* Game::GetPlayer() const { return player.get(); }
+const std::vector<Tank>& Game::GetEnemies() const { return enemies; }
+const std::vector<Bullet>& Game::GetBullets() const { return bullets; }
+
+void Game::TogglePause() {
+    if (state == GameState::PLAYING) state = GameState::PAUSED;
+    else if (state == GameState::PAUSED) state = GameState::PLAYING;
+}
+
+void Game::Quit() {
+    state = GameState::LOSE;
+}
 
 void Game::ResetPlayer() {
     player = std::make_unique<Tank>(12, 22, Constants::Direction::UP, Constants::TankType::PLAYER);
@@ -41,8 +55,9 @@ bool Game::TankCollides(int x, int y, int ignoreIdx) const {
     return false;
 }
 
-void Game::MovePlayer(Constants::Direction d) {
+void Game::PlayerMove(Constants::Direction d) {
     if (!player || !player->alive) return;
+    if (state != GameState::PLAYING) return;
 
     player->dir = d;
     int prevX = player->pos.x;
@@ -58,6 +73,7 @@ void Game::MovePlayer(Constants::Direction d) {
 
 void Game::PlayerShoot() {
     if (!player || !player->alive || !player->CanShoot()) return;
+    if (state != GameState::PLAYING) return;
 
     player->OnShoot();
     bullets.emplace_back();
@@ -79,69 +95,23 @@ void Game::SpawnEnemy() {
     enemySpawnTimer = 0;
 }
 
-void Game::HandleInput(const ftxui::Event& event) {
-    if (event == ftxui::Event::Character('q') || event == ftxui::Event::Character('Q')) {
-        state = GameState::LOSE;
-        return;
-    }
-
-    if (event == ftxui::Event::Character('p') || event == ftxui::Event::Character('P')) {
-        if (state == GameState::PLAYING) state = GameState::PAUSED;
-        else if (state == GameState::PAUSED) state = GameState::PLAYING;
-        return;
-    }
-
-    if (state != GameState::PLAYING) return;
-
-    if (event == ftxui::Event::ArrowUp) {
-        MovePlayer(Constants::Direction::UP);
-        return;
-    }
-    if (event == ftxui::Event::ArrowDown) {
-        MovePlayer(Constants::Direction::DOWN);
-        return;
-    }
-    if (event == ftxui::Event::ArrowLeft) {
-        MovePlayer(Constants::Direction::LEFT);
-        return;
-    }
-    if (event == ftxui::Event::ArrowRight) {
-        MovePlayer(Constants::Direction::RIGHT);
-        return;
-    }
-    if (event == ftxui::Event::Character(' ')) {
-        PlayerShoot();
-        return;
-    }
-}
-
 void Game::Update() {
     if (state != GameState::PLAYING) return;
 
-    // Update player cooldowns
     if (player && player->alive) {
         player->Update();
     }
 
-    // Spawn enemies
     enemySpawnTimer++;
     if (enemySpawnTimer >= Constants::ENEMY_SPAWN_INTERVAL) {
         SpawnEnemy();
     }
 
-    // Enemy AI
     ProcessEnemyAI();
-
-    // Bullets
     ProcessBullets();
-
-    // Collisions
     CheckCollisions();
-
-    // Base check
     CheckBaseDestroyed();
 
-    // Win condition
     if (enemiesKilled >= Constants::ENEMIES_PER_LEVEL && state == GameState::PLAYING) {
         NextLevel();
     }
@@ -288,103 +258,4 @@ void Game::NextLevel() {
     map.LoadLevel(level);
     ResetPlayer();
     score += 500;
-}
-
-ftxui::Element Game::Render() const {
-    using namespace ftxui;
-
-    Elements rows;
-
-    for (int y = 0; y < Constants::MAP_HEIGHT; y++) {
-        Elements cols;
-        for (int x = 0; x < Constants::MAP_WIDTH; x++) {
-            std::string cell = "  ";
-            Color fg = Color::White;
-            Color bg = Color::Black;
-
-            bool hasPlayer = player && player->alive && player->pos.x == x && player->pos.y == y;
-            bool hasEnemy = false;
-            Constants::Direction enemyDir = Constants::Direction::UP;
-            for (const auto& e : enemies) {
-                if (e.alive && e.pos.x == x && e.pos.y == y) {
-                    hasEnemy = true;
-                    enemyDir = e.dir;
-                    break;
-                }
-            }
-            bool hasBullet = false;
-            for (const auto& b : bullets) {
-                if (b.active && b.pos.x == x && b.pos.y == y) {
-                    hasBullet = true;
-                    break;
-                }
-            }
-
-            auto cellType = map.GetCell(x, y);
-
-            if (hasPlayer) {
-                switch (player->dir) {
-                case Constants::Direction::UP:    cell = "▲ "; break;
-                case Constants::Direction::DOWN:  cell = "▼ "; break;
-                case Constants::Direction::LEFT:  cell = "◄ "; break;
-                case Constants::Direction::RIGHT: cell = "► "; break;
-                }
-                fg = Color::Green;
-            } else if (hasEnemy) {
-                switch (enemyDir) {
-                case Constants::Direction::UP:    cell = "▲ "; break;
-                case Constants::Direction::DOWN:  cell = "▼ "; break;
-                case Constants::Direction::LEFT:  cell = "◄ "; break;
-                case Constants::Direction::RIGHT: cell = "► "; break;
-                }
-                fg = Color::Red;
-            } else if (hasBullet) {
-                cell = "● ";
-                fg = Color::Yellow;
-            } else if (cellType == Constants::CellType::BRICK) {
-                cell = "▓▓";
-                fg = Color::Orange1;
-                bg = Color::Orange1;
-            } else if (cellType == Constants::CellType::STEEL) {
-                cell = "██";
-                fg = Color::Grey50;
-                bg = Color::Grey50;
-            } else if (cellType == Constants::CellType::BASE) {
-                cell = "⬥ ";
-                fg = Color::Cyan;
-            }
-
-            cols.push_back(text(cell) | color(fg) | bgcolor(bg));
-        }
-        rows.push_back(hbox(std::move(cols)));
-    }
-
-    auto gameArea = vbox(std::move(rows)) | border;
-
-    std::string statusText;
-    switch (state) {
-    case GameState::PLAYING: statusText = "PLAYING"; break;
-    case GameState::PAUSED:  statusText = "PAUSED";  break;
-    case GameState::WIN:     statusText = "YOU WIN!"; break;
-    case GameState::LOSE:    statusText = "GAME OVER"; break;
-    }
-
-    auto hud = hbox({
-        text(" Score: " + std::to_string(score) + " ") | border,
-        text(" Level: " + std::to_string(level) + " ") | border,
-        text(" Lives: " + std::to_string(lives) + " ") | border,
-        text(" " + statusText + " ") | border | color(Color::Yellow),
-        text(" Kills: " + std::to_string(enemiesKilled) + "/" +
-             std::to_string(Constants::ENEMIES_PER_LEVEL) + " ") | border,
-    });
-
-    auto controls = text(" Arrow Keys: Move  |  Space: Shoot  |  P: Pause  |  Q: Quit");
-
-    return vbox({
-        gameArea,
-        separator(),
-        hud | center,
-        separator(),
-        controls | center | dim
-    });
 }

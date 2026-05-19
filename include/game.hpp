@@ -6,8 +6,6 @@
 #include "map.hpp"
 #include <vector>
 #include <memory>
-#include <ftxui/component/event.hpp>
-#include <ftxui/dom/elements.hpp>
 
 enum class GameState { PLAYING, PAUSED, WIN, LOSE };
 
@@ -16,14 +14,22 @@ public:
     Game();
 
     void Update();
-    void HandleInput(const ftxui::Event& event);
-    ftxui::Element Render() const;
+    void PlayerMove(Constants::Direction d);
+    void PlayerShoot();
+    void TogglePause();
+    void Quit();
 
     bool Running() const;
-    int Score() const;
-    int Level() const;
-    int Lives() const;
+    int GetScore() const;
+    int GetLevel() const;
+    int GetLives() const;
+    int GetEnemiesKilled() const;
     GameState GetState() const;
+
+    const Map& GetMap() const;
+    const Tank* GetPlayer() const;
+    const std::vector<Tank>& GetEnemies() const;
+    const std::vector<Bullet>& GetBullets() const;
 
 private:
     void SpawnEnemy();
@@ -34,8 +40,6 @@ private:
     void NextLevel();
     void ResetPlayer();
     bool TankCollides(int x, int y, int ignoreIdx = -1) const;
-    void MovePlayer(Constants::Direction d);
-    void PlayerShoot();
 
     Map map;
     std::unique_ptr<Tank> player;
