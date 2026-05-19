@@ -14,7 +14,8 @@ public:
     Game();
 
     void Update();
-    void PlayerMove(Constants::Direction d);
+    void SetMoveDir(Constants::Direction d);
+    void StopMove();
     void PlayerShoot();
     void TogglePause();
     void Quit();
@@ -35,10 +36,13 @@ private:
     void SpawnEnemy();
     void ProcessBullets();
     void ProcessEnemyAI();
+    void ProcessPlayerMove();
     void CheckCollisions();
     void CheckBaseDestroyed();
     void NextLevel();
     void ResetPlayer();
+    void CleanupDeadEnemies();
+    int AliveEnemyCount() const;
     bool TankCollides(int x, int y, int ignoreIdx = -1, bool excludePlayer = false) const;
 
     Map map;
@@ -53,4 +57,9 @@ private:
     int enemiesSpawned;
     int enemiesKilled;
     GameState state;
+
+    // Smooth movement
+    Constants::Direction moveDir = Constants::Direction::NONE;
+    int moveCooldown = 0;
+    static constexpr int MOVE_INTERVAL = 2; // move every 3 ticks
 };

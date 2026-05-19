@@ -17,7 +17,7 @@ constexpr int ENEMY_SPAWN_INTERVAL = 60;
 constexpr int BULLET_SPEED = 2;
 constexpr int TANK_SPEED = 1;
 
-enum class Direction { UP, DOWN, LEFT, RIGHT };
+enum class Direction { UP, DOWN, LEFT, RIGHT, NONE };
 
 enum class CellType { EMPTY, BRICK, STEEL, BASE };
 

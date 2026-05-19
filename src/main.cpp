@@ -207,19 +207,19 @@ int main() {
             game.Quit();
         if (event == Event::Character('p') || event == Event::Character('P'))
             game.TogglePause();
-        if (event == Event::ArrowUp)    game.PlayerMove(Constants::Direction::UP);
-        if (event == Event::ArrowDown)  game.PlayerMove(Constants::Direction::DOWN);
-        if (event == Event::ArrowLeft)  game.PlayerMove(Constants::Direction::LEFT);
-        if (event == Event::ArrowRight) game.PlayerMove(Constants::Direction::RIGHT);
+        if (event == Event::ArrowUp)    game.SetMoveDir(Constants::Direction::UP);
+        if (event == Event::ArrowDown)  game.SetMoveDir(Constants::Direction::DOWN);
+        if (event == Event::ArrowLeft)  game.SetMoveDir(Constants::Direction::LEFT);
+        if (event == Event::ArrowRight) game.SetMoveDir(Constants::Direction::RIGHT);
         // WASD fallback
         if (event == Event::Character('w') || event == Event::Character('W'))
-            game.PlayerMove(Constants::Direction::UP);
+            game.SetMoveDir(Constants::Direction::UP);
         if (event == Event::Character('s') || event == Event::Character('S'))
-            game.PlayerMove(Constants::Direction::DOWN);
+            game.SetMoveDir(Constants::Direction::DOWN);
         if (event == Event::Character('a') || event == Event::Character('A'))
-            game.PlayerMove(Constants::Direction::LEFT);
+            game.SetMoveDir(Constants::Direction::LEFT);
         if (event == Event::Character('d') || event == Event::Character('D'))
-            game.PlayerMove(Constants::Direction::RIGHT);
+            game.SetMoveDir(Constants::Direction::RIGHT);
         if (event == Event::Character(' ')) game.PlayerShoot();
 
         if (!game.Running()) screen.Exit();

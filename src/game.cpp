@@ -37,6 +37,22 @@ void Game::Quit() {
 void Game::ResetPlayer() {
     player = std::make_unique<Tank>(12, 22, Constants::Direction::UP, Constants::TankType::PLAYER);
     player->hp = 1;
+    moveDir = Constants::Direction::NONE;
+    moveCooldown = 0;
+}
+
+int Game::AliveEnemyCount() const {
+    int count = 0;
+    for (const auto& e : enemies)
+        if (e.alive) count++;
+    return count;
+}
+
+void Game::CleanupDeadEnemies() {
+    enemies.erase(
+        std::remove_if(enemies.begin(), enemies.end(),
+                       [](const Tank& t) { return !t.alive; }),
+        enemies.end());
 }
 
 bool Game::TankCollides(int x, int y, int ignoreIdx, bool excludePlayer) const {
@@ -55,20 +71,47 @@ bool Game::TankCollides(int x, int y, int ignoreIdx, bool excludePlayer) const {
     return false;
 }
 
-void Game::PlayerMove(Constants::Direction d) {
+void Game::SetMoveDir(Constants::Direction d) {
     if (!player || !player->alive) return;
     if (state != GameState::PLAYING) return;
 
     player->dir = d;
+    moveDir = d;
+    moveCooldown = 0; // move immediately
+}
+
+void Game::StopMove() {
+    moveDir = Constants::Direction::NONE;
+}
+
+void Game::ProcessPlayerMove() {
+    if (moveDir == Constants::Direction::NONE) return;
+
+    if (moveCooldown > 0) {
+        moveCooldown--;
+        return;
+    }
+
+    if (!player || !player->alive) return;
+
+    player->dir = moveDir;
     int prevX = player->pos.x;
     int prevY = player->pos.y;
 
-    player->Move();
+    switch (moveDir) {
+    case Constants::Direction::UP:    player->pos.y--; break;
+    case Constants::Direction::DOWN:  player->pos.y++; break;
+    case Constants::Direction::LEFT:  player->pos.x--; break;
+    case Constants::Direction::RIGHT: player->pos.x++; break;
+    default: return;
+    }
 
     if (TankCollides(player->pos.x, player->pos.y, -1, true)) {
         player->pos.x = prevX;
         player->pos.y = prevY;
     }
+
+    moveCooldown = MOVE_INTERVAL;
 }
 
 void Game::PlayerShoot() {
@@ -81,7 +124,7 @@ void Game::PlayerShoot() {
 }
 
 void Game::SpawnEnemy() {
-    if ((int)enemies.size() >= Constants::MAX_ENEMIES_ON_SCREEN) return;
+    if (AliveEnemyCount() >= Constants::MAX_ENEMIES_ON_SCREEN) return;
     if (enemiesSpawned >= Constants::ENEMIES_PER_LEVEL) return;
 
     auto spawns = map.EnemySpawns();
@@ -102,6 +145,9 @@ void Game::Update() {
         player->Update();
     }
 
+    // Continuous smooth movement
+    ProcessPlayerMove();
+
     enemySpawnTimer++;
     if (enemySpawnTimer >= Constants::ENEMY_SPAWN_INTERVAL) {
         SpawnEnemy();
@@ -111,6 +157,9 @@ void Game::Update() {
     ProcessBullets();
     CheckCollisions();
     CheckBaseDestroyed();
+
+    // Clean up dead enemies so new ones can spawn
+    CleanupDeadEnemies();
 
     if (enemiesKilled >= Constants::ENEMIES_PER_LEVEL && state == GameState::PLAYING) {
         NextLevel();
@@ -162,55 +211,65 @@ void Game::ProcessBullets() {
     for (auto& bullet : bullets) {
         if (!bullet.active) continue;
 
-        bullet.Move();
+        // Step 1 cell at a time to avoid skipping over walls
+        for (int step = 0; step < Constants::BULLET_SPEED; step++) {
+            bullet.Move();
 
-        int bx = bullet.pos.x;
-        int by = bullet.pos.y;
+            int bx = bullet.pos.x;
+            int by = bullet.pos.y;
 
-        if (!map.IsInBounds(bx, by)) {
-            bullet.Deactivate();
-            continue;
-        }
-
-        auto cell = map.GetCell(bx, by);
-
-        if (cell == Constants::CellType::STEEL) {
-            bullet.Deactivate();
-            continue;
-        }
-
-        if (cell == Constants::CellType::BRICK) {
-            map.SetCell(bx, by, Constants::CellType::EMPTY);
-            bullet.Deactivate();
-            continue;
-        }
-
-        if (cell == Constants::CellType::BASE) {
-            map.SetCell(bx, by, Constants::CellType::EMPTY);
-            bullet.Deactivate();
-            continue;
-        }
-
-        if (!bullet.fromPlayer && player && player->alive &&
-            player->pos.x == bx && player->pos.y == by) {
-            player->alive = false;
-            bullet.Deactivate();
-            lives--;
-            if (lives > 0) {
-                ResetPlayer();
-            } else {
-                state = GameState::LOSE;
+            if (!map.IsInBounds(bx, by)) {
+                bullet.Deactivate();
+                break;
             }
-            continue;
-        }
 
-        if (bullet.fromPlayer) {
-            for (auto& enemy : enemies) {
-                if (enemy.alive && enemy.pos.x == bx && enemy.pos.y == by) {
-                    enemy.alive = false;
+            auto cell = map.GetCell(bx, by);
+
+            if (cell == Constants::CellType::STEEL) {
+                bullet.Deactivate();
+                break;
+            }
+
+            if (cell == Constants::CellType::BRICK) {
+                map.SetCell(bx, by, Constants::CellType::EMPTY);
+                bullet.Deactivate();
+                break;
+            }
+
+            if (cell == Constants::CellType::BASE) {
+                map.SetCell(bx, by, Constants::CellType::EMPTY);
+                bullet.Deactivate();
+                break;
+            }
+
+            // Hit player
+            if (!bullet.fromPlayer && player && player->alive &&
+                player->pos.x == bx && player->pos.y == by) {
+                player->alive = false;
+                bullet.Deactivate();
+                lives--;
+                if (lives > 0) {
+                    ResetPlayer();
+                } else {
+                    state = GameState::LOSE;
+                }
+                break;
+            }
+
+            // Hit enemy
+            if (bullet.fromPlayer) {
+                bool hit = false;
+                for (auto& enemy : enemies) {
+                    if (enemy.alive && enemy.pos.x == bx && enemy.pos.y == by) {
+                        enemy.alive = false;
+                        score += 100;
+                        enemiesKilled++;
+                        hit = true;
+                        break;
+                    }
+                }
+                if (hit) {
                     bullet.Deactivate();
-                    score += 100;
-                    enemiesKilled++;
                     break;
                 }
             }

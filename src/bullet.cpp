@@ -11,10 +11,11 @@ void Bullet::Fire(Constants::Position start, Constants::Direction d, bool player
 
 void Bullet::Move() {
     switch (dir) {
-    case Constants::Direction::UP:    pos.y -= Constants::BULLET_SPEED; break;
-    case Constants::Direction::DOWN:  pos.y += Constants::BULLET_SPEED; break;
-    case Constants::Direction::LEFT:  pos.x -= Constants::BULLET_SPEED; break;
-    case Constants::Direction::RIGHT: pos.x += Constants::BULLET_SPEED; break;
+    case Constants::Direction::UP:    pos.y--; break;
+    case Constants::Direction::DOWN:  pos.y++; break;
+    case Constants::Direction::LEFT:  pos.x--; break;
+    case Constants::Direction::RIGHT: pos.x++; break;
+    default: break;
     }
 }
 
