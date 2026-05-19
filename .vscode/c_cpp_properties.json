@@ -2,11 +2,14 @@
     "configurations": [
         {
             "name": "Win32",
-            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "compilerPath": "D:/visual studio/visual studio2022/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "windows-msvc-x64",
+            "includePath": [
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/build/_deps/ftxui-src/include/**"
+            ]
         }
     ],
     "version": 4
