@@ -2,6 +2,9 @@
 build/
 cmake-build-*/
 
+# Junction to FTXUI headers (local only)
+include/ftxui/
+
 # IDE files
 .vs/
 .cph/
