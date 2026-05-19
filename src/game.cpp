@@ -24,6 +24,7 @@ const Map& Game::GetMap() const { return map; }
 const Tank* Game::GetPlayer() const { return player.get(); }
 const std::vector<Tank>& Game::GetEnemies() const { return enemies; }
 const std::vector<Bullet>& Game::GetBullets() const { return bullets; }
+const std::vector<Explosion>& Game::GetExplosions() const { return explosions; }
 
 void Game::TogglePause() {
     if (state == GameState::PLAYING) state = GameState::PAUSED;
@@ -32,6 +33,21 @@ void Game::TogglePause() {
 
 void Game::Quit() {
     state = GameState::LOSE;
+}
+
+void Game::Restart() {
+    score = 0;
+    level = 1;
+    lives = Constants::PLAYER_LIVES;
+    enemiesSpawned = 0;
+    enemiesKilled = 0;
+    enemySpawnTimer = 0;
+    enemies.clear();
+    bullets.clear();
+    explosions.clear();
+    state = GameState::PLAYING;
+    map.LoadLevel(level);
+    ResetPlayer();
 }
 
 void Game::ResetPlayer() {
@@ -71,13 +87,17 @@ bool Game::TankCollides(int x, int y, int ignoreIdx, bool excludePlayer) const {
     return false;
 }
 
+void Game::AddExplosion(Constants::Position p) {
+    explosions.push_back({p, 6});
+}
+
 void Game::SetMoveDir(Constants::Direction d) {
     if (!player || !player->alive) return;
     if (state != GameState::PLAYING) return;
 
     player->dir = d;
     moveDir = d;
-    moveCooldown = 0; // move immediately
+    moveCooldown = 0;
 }
 
 void Game::StopMove() {
@@ -114,13 +134,57 @@ void Game::ProcessPlayerMove() {
     moveCooldown = MOVE_INTERVAL;
 }
 
+// Shoot helper: checks spawn position for immediate wall hit
+bool Game::TrySpawnBullet(Constants::Position spawn, Constants::Direction dir, bool fromPlayer) {
+    if (!map.IsInBounds(spawn.x, spawn.y)) return false;
+
+    auto cell = map.GetCell(spawn.x, spawn.y);
+
+    if (cell == Constants::CellType::STEEL) return false;
+    if (cell == Constants::CellType::BRICK) {
+        map.SetCell(spawn.x, spawn.y, Constants::CellType::EMPTY);
+        AddExplosion(spawn);
+        return false; // bullet consumed by wall
+    }
+    if (cell == Constants::CellType::BASE) {
+        map.SetCell(spawn.x, spawn.y, Constants::CellType::EMPTY);
+        AddExplosion(spawn);
+        return false;
+    }
+
+    // Check tanks at spawn
+    if (fromPlayer) {
+        for (auto& e : enemies) {
+            if (e.alive && e.pos.x == spawn.x && e.pos.y == spawn.y) {
+                e.alive = false;
+                AddExplosion(spawn);
+                score += 100;
+                enemiesKilled++;
+                return false;
+            }
+        }
+    } else {
+        if (player && player->alive && player->pos.x == spawn.x && player->pos.y == spawn.y) {
+            player->alive = false;
+            AddExplosion(spawn);
+            lives--;
+            if (lives <= 0) state = GameState::LOSE;
+            else ResetPlayer();
+            return false;
+        }
+    }
+
+    bullets.emplace_back();
+    bullets.back().Fire(spawn, dir, fromPlayer);
+    return true;
+}
+
 void Game::PlayerShoot() {
     if (!player || !player->alive || !player->CanShoot()) return;
     if (state != GameState::PLAYING) return;
 
     player->OnShoot();
-    bullets.emplace_back();
-    bullets.back().Fire(player->BulletSpawn(), player->dir, true);
+    TrySpawnBullet(player->BulletSpawn(), player->dir, true);
 }
 
 void Game::SpawnEnemy() {
@@ -145,7 +209,6 @@ void Game::Update() {
         player->Update();
     }
 
-    // Continuous smooth movement
     ProcessPlayerMove();
 
     enemySpawnTimer++;
@@ -158,7 +221,13 @@ void Game::Update() {
     CheckCollisions();
     CheckBaseDestroyed();
 
-    // Clean up dead enemies so new ones can spawn
+    // Decay explosions
+    for (auto& ex : explosions) ex.timer--;
+    explosions.erase(
+        std::remove_if(explosions.begin(), explosions.end(),
+                       [](const Explosion& e) { return e.timer <= 0; }),
+        explosions.end());
+
     CleanupDeadEnemies();
 
     if (enemiesKilled >= Constants::ENEMIES_PER_LEVEL && state == GameState::PLAYING) {
@@ -201,8 +270,7 @@ void Game::ProcessEnemyAI() {
 
         if (enemy.CanShoot() && rand() % Constants::ENEMY_SHOOT_COOLDOWN == 0) {
             enemy.OnShoot();
-            bullets.emplace_back();
-            bullets.back().Fire(enemy.BulletSpawn(), enemy.dir, false);
+            TrySpawnBullet(enemy.BulletSpawn(), enemy.dir, false);
         }
     }
 }
@@ -211,7 +279,6 @@ void Game::ProcessBullets() {
     for (auto& bullet : bullets) {
         if (!bullet.active) continue;
 
-        // Step 1 cell at a time to avoid skipping over walls
         for (int step = 0; step < Constants::BULLET_SPEED; step++) {
             bullet.Move();
 
@@ -226,42 +293,42 @@ void Game::ProcessBullets() {
             auto cell = map.GetCell(bx, by);
 
             if (cell == Constants::CellType::STEEL) {
+                AddExplosion({bx, by});
                 bullet.Deactivate();
                 break;
             }
 
             if (cell == Constants::CellType::BRICK) {
                 map.SetCell(bx, by, Constants::CellType::EMPTY);
+                AddExplosion({bx, by});
                 bullet.Deactivate();
                 break;
             }
 
             if (cell == Constants::CellType::BASE) {
                 map.SetCell(bx, by, Constants::CellType::EMPTY);
+                AddExplosion({bx, by});
                 bullet.Deactivate();
                 break;
             }
 
-            // Hit player
             if (!bullet.fromPlayer && player && player->alive &&
                 player->pos.x == bx && player->pos.y == by) {
                 player->alive = false;
+                AddExplosion({bx, by});
                 bullet.Deactivate();
                 lives--;
-                if (lives > 0) {
-                    ResetPlayer();
-                } else {
-                    state = GameState::LOSE;
-                }
+                if (lives <= 0) state = GameState::LOSE;
+                else ResetPlayer();
                 break;
             }
 
-            // Hit enemy
             if (bullet.fromPlayer) {
                 bool hit = false;
                 for (auto& enemy : enemies) {
                     if (enemy.alive && enemy.pos.x == bx && enemy.pos.y == by) {
                         enemy.alive = false;
+                        AddExplosion({bx, by});
                         score += 100;
                         enemiesKilled++;
                         hit = true;
@@ -288,13 +355,12 @@ void Game::CheckCollisions() {
     for (auto& enemy : enemies) {
         if (enemy.alive && player->pos == enemy.pos) {
             player->alive = false;
+            AddExplosion(player->pos);
             enemy.alive = false;
+            AddExplosion(enemy.pos);
             lives--;
-            if (lives > 0) {
-                ResetPlayer();
-            } else {
-                state = GameState::LOSE;
-            }
+            if (lives <= 0) state = GameState::LOSE;
+            else ResetPlayer();
             break;
         }
     }
@@ -311,6 +377,7 @@ void Game::NextLevel() {
     level++;
     enemies.clear();
     bullets.clear();
+    explosions.clear();
     enemiesSpawned = 0;
     enemiesKilled = 0;
     enemySpawnTimer = 0;
