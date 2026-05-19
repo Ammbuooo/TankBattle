@@ -1,4 +1,4 @@
-#include "bullet.hpp"
+#include "../include/bullet.hpp"
 
 Bullet::Bullet() : pos{0, 0}, dir(Constants::Direction::UP), active(false), fromPlayer(false) {}
 

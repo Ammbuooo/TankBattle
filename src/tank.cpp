@@ -1,4 +1,4 @@
-#include "tank.hpp"
+#include "../include/tank.hpp"
 
 Tank::Tank(int x, int y, Constants::Direction d, Constants::TankType t)
     : pos{x, y}, dir(d), type(t), bulletCooldown(0), alive(true), hp(1) {}

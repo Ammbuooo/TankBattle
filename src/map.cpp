@@ -1,4 +1,4 @@
-#include "map.hpp"
+#include "../include/map.hpp"
 
 Map::Map() : basePos{12, 24} {
     Clear();
