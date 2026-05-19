@@ -39,12 +39,12 @@ void Game::ResetPlayer() {
     player->hp = 1;
 }
 
-bool Game::TankCollides(int x, int y, int ignoreIdx) const {
+bool Game::TankCollides(int x, int y, int ignoreIdx, bool excludePlayer) const {
     if (!map.IsInBounds(x, y)) return true;
     if (map.IsSolid(x, y)) return true;
     if (map.GetCell(x, y) == Constants::CellType::BASE) return true;
 
-    if (player && player->alive && player->pos.x == x && player->pos.y == y)
+    if (!excludePlayer && player && player->alive && player->pos.x == x && player->pos.y == y)
         return true;
 
     for (size_t i = 0; i < enemies.size(); i++) {
@@ -65,7 +65,7 @@ void Game::PlayerMove(Constants::Direction d) {
 
     player->Move();
 
-    if (TankCollides(player->pos.x, player->pos.y)) {
+    if (TankCollides(player->pos.x, player->pos.y, -1, true)) {
         player->pos.x = prevX;
         player->pos.y = prevY;
     }

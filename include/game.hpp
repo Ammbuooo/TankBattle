@@ -39,7 +39,7 @@ private:
     void CheckBaseDestroyed();
     void NextLevel();
     void ResetPlayer();
-    bool TankCollides(int x, int y, int ignoreIdx = -1) const;
+    bool TankCollides(int x, int y, int ignoreIdx = -1, bool excludePlayer = false) const;
 
     Map map;
     std::unique_ptr<Tank> player;
