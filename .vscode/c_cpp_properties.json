@@ -2,10 +2,7 @@
     "configurations": [
         {
             "name": "Win32",
-            "includePath": [
-                "C:/Users/BUooo/Desktop/期末大作业/tank-battle/include",
-                "C:/Users/BUooo/Desktop/期末大作业/tank-battle/build/_deps/ftxui-src/include"
-            ],
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "compilerPath": "D:/visual studio/visual studio2022/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",

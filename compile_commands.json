@@ -1,0 +1,27 @@
+[
+  {
+    "directory": "C:/Users/BUooo/Desktop/期末大作业/tank-battle",
+    "command": "cl.exe /std:c++17 /I\"include\" /I\"build/_deps/ftxui-src/include\" /c src/main.cpp",
+    "file": "src/main.cpp"
+  },
+  {
+    "directory": "C:/Users/BUooo/Desktop/期末大作业/tank-battle",
+    "command": "cl.exe /std:c++17 /I\"include\" /I\"build/_deps/ftxui-src/include\" /c src/game.cpp",
+    "file": "src/game.cpp"
+  },
+  {
+    "directory": "C:/Users/BUooo/Desktop/期末大作业/tank-battle",
+    "command": "cl.exe /std:c++17 /I\"include\" /I\"build/_deps/ftxui-src/include\" /c src/tank.cpp",
+    "file": "src/tank.cpp"
+  },
+  {
+    "directory": "C:/Users/BUooo/Desktop/期末大作业/tank-battle",
+    "command": "cl.exe /std:c++17 /I\"include\" /I\"build/_deps/ftxui-src/include\" /c src/bullet.cpp",
+    "file": "src/bullet.cpp"
+  },
+  {
+    "directory": "C:/Users/BUooo/Desktop/期末大作业/tank-battle",
+    "command": "cl.exe /std:c++17 /I\"include\" /I\"build/_deps/ftxui-src/include\" /c src/map.cpp",
+    "file": "src/map.cpp"
+  }
+]
