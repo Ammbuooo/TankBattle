@@ -1,98 +1,43 @@
-# Tank Battle (坦克大战)
+# 坦克大战 (Tank Battle)
 
-A classic tank battle game implemented in C++17 with the [FTXUI](https://github.com/ArthurSonzogni/FTXUI) terminal UI library.
+使用 C++17 和 [FTXUI](https://github.com/ArthurSonzogni/FTXUI) 终端 UI 库实现的经典坦克大战游戏。
 
-## Features
+## 游戏特色
 
-- Classic top-down tank battle gameplay
-- 3 unique level layouts with increasing difficulty
-- Brick walls (destructible) and steel walls (indestructible)
-- Enemy AI with randomized movement and shooting
-- Score tracking and multiple lives
-- Progressive levels (20 enemies per level)
-- Terminal-based UI with color rendering
+- 经典的俯视角坦克大战玩法
+- 3 个独特的关卡布局，难度逐步提升
+- 砖墙（可被摧毁）与钢墙（不可摧毁）
+- 带有随机移动和射击行为的敌方 AI
+- 分数追踪与多条生命
+- 渐进式关卡（每关 20 个敌人）
+- 基于终端的彩色渲染界面
 
-## Controls
+## 操作方式
 
-| Key | Action |
+| 按键 | 动作 |
 |---|---|
-| Arrow Keys | Move tank |
-| Space | Shoot |
-| P | Pause / Resume |
-| Q | Quit game |
+| 方向键 | 移动坦克 |
+| 空格键 | 开火 |
+| P | 暂停 / 继续 |
+| Q | 退出游戏 |
 
-## Requirements
+## 环境要求
 
-- C++17 compatible compiler (GCC 8+, Clang 7+, MSVC 2019+)
-- CMake 3.14 or higher
-- Internet connection (first build downloads FTXUI automatically)
+- 支持 C++17 的编译器（GCC 8+、Clang 7+、MSVC 2019+）
+- CMake 3.14 或更高版本
+- 网络连接（首次构建时会自动下载 FTXUI）
 
-## Build & Run
+## 构建与运行
 
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone https://github.com/YOUR_USERNAME/tank-battle.git
 cd tank-battle
 
-# Configure and build
+# 配置并构建
 cmake -B build
 cmake --build build
 
-# Run the game
+# 运行游戏
 ./build/tank_battle
 ```
-
-### Windows (Visual Studio)
-
-```powershell
-cmake -B build
-cmake --build build --config Release
-.\build\Release\tank_battle.exe
-```
-
-## Project Structure
-
-```
-tank-battle/
-├── CMakeLists.txt          # Build configuration
-├── README.md
-├── include/
-│   ├── constants.hpp       # Game constants and shared types
-│   ├── tank.hpp            # Tank entity
-│   ├── bullet.hpp          # Bullet entity
-│   ├── map.hpp             # Game map & level data
-│   └── game.hpp            # Core game logic
-└── src/
-    ├── main.cpp            # Entry point & FTXUI integration
-    ├── tank.cpp
-    ├── bullet.cpp
-    ├── map.cpp
-    └── game.cpp
-```
-
-## Contributing
-
-Contributions are welcome. Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
-### Ideas for Contributions
-
-- Sound effects
-- Power-ups (speed boost, multi-shot, shield)
-- More level designs
-- Two-player co-op mode
-- High score persistence
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [FTXUI](https://github.com/ArthurSonzogni/FTXUI) — C++ Functional Terminal User Interface library
-- Inspired by the classic NES *Battle City* (坦克大战)
