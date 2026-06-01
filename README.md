@@ -42,7 +42,7 @@ cmake --build build
 ./build/tank_battle
 ```
 
-##项目结构
+## 项目结构
 ```bash
 tank-battle/
 ├── CMakeLists.txt          # 构建配置
