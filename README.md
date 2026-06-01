@@ -41,3 +41,48 @@ cmake --build build
 # 运行游戏
 ./build/tank_battle
 ```
+
+##项目结构
+```bash
+tank-battle/
+├── CMakeLists.txt          # 构建配置
+├── README.md
+├── include/
+│   ├── constants.hpp       # 游戏常量和共享类型
+│   ├── tank.hpp            # 坦克实体
+│   ├── bullet.hpp          # 子弹实体
+│   ├── map.hpp             # 游戏地图与关卡数据
+│   └── game.hpp            # 核心游戏逻辑
+└── src/
+    ├── main.cpp            # 入口点及 FTXUI 集成
+    ├── tank.cpp
+    ├── bullet.cpp
+    ├── map.cpp
+    └── game.cpp
+```
+
+## 参与贡献
+
+欢迎贡献代码，请遵循以下步骤：
+
+Fork 本仓库
+
+创建特性分支 (git checkout -b feature/你的特性)
+
+提交更改 (git commit -m '添加某某特性')
+
+推送到分支 (git push origin feature/你的特性)
+
+发起 Pull Request
+
+## 贡献思路
+
+添加音效
+
+道具系统（速度提升、多重射击、护盾）
+
+更多关卡设计
+
+双人合作模式
+
+高分记录持久化
